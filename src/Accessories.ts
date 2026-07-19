@@ -1,5 +1,5 @@
 import * as HAP from "@mkellsy/hap-device";
-import * as Leap from "@mkellsy/leap-client";
+import * as Leap from "@vldmit/leap-client";
 
 import { API, Logging, PlatformConfig } from "homebridge";
 

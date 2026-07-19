@@ -32,7 +32,7 @@ describe("Platform", () => {
 
     before(() => {
         platformType = proxyquire("../src/Platform", {
-            "@mkellsy/leap-client": {
+            "@vldmit/leap-client": {
                 connect() {
                     return {
                         on(event: string, callback: Function) {

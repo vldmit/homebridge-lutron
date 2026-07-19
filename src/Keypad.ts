@@ -1,4 +1,4 @@
-import * as Leap from "@mkellsy/leap-client";
+import * as Leap from "@vldmit/leap-client";
 
 import { API, Logging, Service } from "homebridge";
 import { Action, Button, DeviceType } from "@mkellsy/hap-device";

@@ -11,7 +11,7 @@ const log = logger.get("Build");
 
 logger.setDefaults({ useDefaults: true });
 
-const leapClientRoot = path.resolve(__dirname, "node_modules/@mkellsy/leap-client");
+const leapClientRoot = path.resolve(__dirname, "node_modules/@vldmit/leap-client");
 const leapClientSrc = path.resolve(leapClientRoot, "src/index.ts");
 // Prefer TypeScript source when developing against a file: linked leap-client clone.
 const leapClientEntry = fs.existsSync(leapClientSrc) ? leapClientSrc : undefined;
@@ -28,7 +28,7 @@ const options = {
     ...(leapClientEntry
         ? {
               alias: {
-                  "@mkellsy/leap-client": leapClientEntry,
+                  "@vldmit/leap-client": leapClientEntry,
               },
           }
         : {}),

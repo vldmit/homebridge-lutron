@@ -4,7 +4,7 @@ import path from "path";
 import bson from "bson";
 
 import { HomebridgePluginUiServer } from "@homebridge/plugin-ui-utils";
-import { pair } from "@mkellsy/leap-client";
+import { pair } from "@vldmit/leap-client";
 
 class UiServer extends HomebridgePluginUiServer {
     constructor() {

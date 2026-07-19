@@ -1,4 +1,4 @@
-import * as Leap from "@mkellsy/leap-client";
+import * as Leap from "@vldmit/leap-client";
 
 import { API, CharacteristicValue, Logging, Service } from "homebridge";
 

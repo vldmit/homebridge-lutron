@@ -69,21 +69,25 @@ npx nodemon --watch src --ext ts --exec \
 
 Options: Homebridge UI “Restart”, `sudo hb-service restart`, or SIGTERM the main `homebridge` process (hb-service respawns it). Avoid stopping `hb-service` unless necessary.
 
-## Local leap-client (active for LEAP debugging)
+## leap-client dependency
 
-`@mkellsy/leap-client` is a **file:** dependency on the sibling clone:
+Default (published fork):
 
 ```text
-package.json → "file:../leap-client"
-~/Developer/leap-client
+package.json → "@vldmit/leap-client": "^1.7.9"
 ```
 
-- Plugin `build` aliases `@mkellsy/leap-client` to `node_modules/@mkellsy/leap-client/src/index.ts` when that path exists (linked clone), so **one** `node ./build` in this repo rebundles leap-client source.
-- Clone must include an `authority` file (copy from npm package if missing): used by plugin build for pairing CA.
-- leap-client uses **js-logger**; Platform configures it at DEBUG under Homebridge so `[LEAP]` lines show in `~/.homebridge/homebridge.log`.
-- After changing either repo’s `src/`: `node ./build` here → kill Lutron child bridge → logs.
+For local LEAP debugging against a sibling clone:
 
-Do not `npm install @mkellsy/leap-client` from the registry while debugging — that drops the file: link.
+```bash
+npm install ../leap-client
+# or set "file:../leap-client" temporarily in package.json
+```
+
+- Plugin `build` aliases `@vldmit/leap-client` to `node_modules/@vldmit/leap-client/src/index.ts` when that path exists (linked/file clone), so **one** `node ./build` here rebundles leap-client source.
+- Package must include an `authority` file (shipped on npm): used by plugin build for pairing CA.
+- leap-client uses **js-logger**; Platform configures it at DEBUG under Homebridge so `[LEAP]` lines show in `~/.homebridge/homebridge.log`.
+- After changing leap-client source: reinstall/link if needed → `node ./build` here → kill Lutron child bridge → logs.
 
 ## First-time / broken link recovery
 
@@ -91,7 +95,7 @@ Do not `npm install @mkellsy/leap-client` from the registry while debugging — 
 # leap-client (if needed)
 cd ~/Developer/leap-client && npm install
 # ensure authority exists (from published package if clone lacks it)
-# cp node_modules/@mkellsy/leap-client/authority ~/Developer/leap-client/authority  # from a prior install
+# cp node_modules/@vldmit/leap-client/authority ~/Developer/leap-client/authority  # from a prior install
 
 cd ~/Developer/homebridge-lutron
 npm install
@@ -133,7 +137,7 @@ Full release-style: `npm run build` (format + lint + test + esbuild).
 | Accessory wiring | `src/Accessories.ts`, `src/Device.ts` |
 | CLI (`lutron`) | `src/CLI.ts` → `lib/cli.js` via `bin/lutron` |
 | Custom UI server | `src/Server.ts` → `ui/server.js`; static UI under `ui/public/` |
-| LEAP / HAP libs | Bundled at build from `@mkellsy/leap-client`, `@mkellsy/hap-device` (devDependencies); runtime externals: `homebridge`, `bson` |
+| LEAP / HAP libs | Bundled at build from `@vldmit/leap-client`, `@mkellsy/hap-device` (devDependencies); runtime externals: `homebridge`, `bson` |
 
 Tests live in `test/` and mirror device modules. Prefer targeted tests when changing one accessory type.
 
