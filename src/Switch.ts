@@ -26,7 +26,9 @@ export class Switch extends Common<Leap.Switch> implements Device {
             this.accessory.getService(this.homebridge.hap.Service.Switch) ||
             this.accessory.addService(this.homebridge.hap.Service.Switch, this.device.name);
 
-        this.service.addCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName);
+        if (!this.service.testCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName)) {
+            this.service.addCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName);
+        }
 
         this.service.setCharacteristic(this.homebridge.hap.Characteristic.Name, this.device.name);
         this.service.setCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName, this.device.name);
@@ -54,9 +56,11 @@ export class Switch extends Common<Leap.Switch> implements Device {
      * @returns A characteristic value.
      */
     private onGetState = (): CharacteristicValue => {
-        this.log.debug(`Switch Get State: ${this.device.name} ${this.device.status.state}`);
+        const on = this.device.status.state === "On";
 
-        return this.device.status.state === "On";
+        this.log.info(`[LEAP] Switch Get State: ${this.device.name} status=${this.device.status.state} -> ${on}`);
+
+        return on;
     };
 
     /**
@@ -67,10 +71,22 @@ export class Switch extends Common<Leap.Switch> implements Device {
     private onSetState = async (value: CharacteristicValue): Promise<void> => {
         const state = value ? "On" : "Off";
 
-        if (this.device.status.state !== state) {
-            this.log.debug(`Switch Set State: ${this.device.name} ${state}`);
+        this.log.info(
+            `[LEAP] Switch Set State: ${this.device.name} requested=${state} current=${this.device.status.state}`,
+        );
 
-            await this.device.set({ state });
+        if (this.device.status.state !== state) {
+            try {
+                await this.device.set({ state });
+                this.log.info(`[LEAP] Switch Set State: ${this.device.name} set() completed for ${state}`);
+            } catch (error) {
+                this.log.error(
+                    `[LEAP] Switch Set State failed: ${this.device.name} ${error instanceof Error ? error.message : String(error)}`,
+                );
+                throw error;
+            }
+        } else {
+            this.log.info(`[LEAP] Switch Set State: ${this.device.name} already ${state}, skipping set()`);
         }
     };
 }

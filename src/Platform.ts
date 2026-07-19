@@ -1,5 +1,6 @@
 import * as HAP from "@mkellsy/hap-device";
 import * as Leap from "@mkellsy/leap-client";
+import * as JsLogger from "js-logger";
 
 import { API, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig } from "homebridge";
 
@@ -24,6 +25,8 @@ export class Platform implements DynamicPlatformPlugin {
     private readonly log: Logging;
     private readonly config: PlatformConfig;
     private readonly homebridge: API;
+    private updateCount = 0;
+    private actionCount = 0;
 
     /**
      * Creates an instance to this plugin.
@@ -37,8 +40,36 @@ export class Platform implements DynamicPlatformPlugin {
         this.config = { ...defaults, ...config };
         this.homebridge = homebridge;
 
+        // leap-client uses js-logger; useDefaults installs a console handler (setDefaults alone is silent).
+        JsLogger.useDefaults({
+            defaultLevel: JsLogger.DEBUG,
+            formatter: (messages, context) => {
+                messages.unshift(`[LEAP][${context.name || "root"}]`);
+            },
+        });
+
+        this.log.info(
+            `[LEAP] platform init toggles: switches=${this.config.switches} dimmers=${this.config.dimmers} ` +
+                `keypads=${this.config.keypads} sensors=${this.config.sensors} remotes=${this.config.remotes} ` +
+                `timeclocks=${this.config.timeclocks} fans=${this.config.fans} shades=${this.config.shades} ` +
+                `strips=${this.config.strips} cco=${this.config.cco}`,
+        );
+
         this.homebridge.on("didFinishLaunching", () => {
-            Leap.connect().on("Available", this.onAvailable).on("Action", this.onAction).on("Update", this.onUpdate);
+            this.log.info("[LEAP] didFinishLaunching — starting Leap.connect()");
+
+            try {
+                const client = Leap.connect();
+
+                client
+                    .on("Available", this.onAvailable)
+                    .on("Action", this.onAction)
+                    .on("Update", this.onUpdate);
+
+                this.log.info("[LEAP] Leap.connect() client created; waiting for discovery/Available");
+            } catch (error) {
+                this.log.error(`[LEAP] Leap.connect() threw: ${error instanceof Error ? error.message : String(error)}`);
+            }
         });
     }
 
@@ -60,18 +91,44 @@ export class Platform implements DynamicPlatformPlugin {
      * register with Homebridge or re-initialize the accessory if it is from
      * the cache.
      */
-    private onAvailable = (devices: HAP.Device[]): void => {
-        for (const device of devices) {
-            const accessory = Accessories.create(this.homebridge, device, this.config, this.log);
+    private onAvailable = (found: HAP.Device[]): void => {
+        this.log.info(`[LEAP] Available event: ${found.length} device(s)`);
 
-            accessory?.register();
+        if (found.length === 0) {
+            this.log.warn("[LEAP] Available fired with zero devices");
+        }
 
-            this.log.debug(`${device.type} available ${device.name}`);
+        let registered = 0;
+        let skipped = 0;
+        let failed = 0;
 
-            if (accessory == null) {
-                Accessories.remove(this.homebridge, device);
+        for (const device of found) {
+            try {
+                const accessory = Accessories.create(this.homebridge, device, this.config, this.log);
+
+                if (accessory == null) {
+                    skipped += 1;
+                    this.log.warn(
+                        `[LEAP] no accessory for type=${device.type} name=${device.name} (disabled or unsupported)`,
+                    );
+                    Accessories.remove(this.homebridge, device);
+                    continue;
+                }
+
+                accessory.register();
+                registered += 1;
+                this.log.info(`[LEAP] device available type=${device.type} name=${device.name} id=${device.id}`);
+            } catch (error) {
+                failed += 1;
+                this.log.error(
+                    `[LEAP] failed to wire device type=${device.type} name=${device.name} id=${device.id}: ${
+                        error instanceof Error ? error.stack || error.message : String(error)
+                    }`,
+                );
             }
         }
+
+        this.log.info(`[LEAP] Available wiring done: registered=${registered} skipped=${skipped} failed=${failed}`);
     };
 
     /*
@@ -79,6 +136,14 @@ export class Platform implements DynamicPlatformPlugin {
      * Homebridge.
      */
     private onAction = (device: HAP.Device, button: HAP.Button, action: HAP.Action): void => {
+        this.actionCount += 1;
+
+        if (this.actionCount <= 20 || this.actionCount % 50 === 0) {
+            this.log.info(
+                `[LEAP] Action #${this.actionCount}: ${device.name} button=${button.name} action=${action}`,
+            );
+        }
+
         const accessory = Accessories.get(this.homebridge, device);
 
         if (accessory == null || accessory.onAction == null) {
@@ -93,9 +158,21 @@ export class Platform implements DynamicPlatformPlugin {
      * relay the state to Homebridge.
      */
     private onUpdate = (device: HAP.Device, state: HAP.DeviceState): void => {
+        this.updateCount += 1;
+
+        if (this.updateCount <= 30 || this.updateCount % 50 === 0) {
+            this.log.info(
+                `[LEAP] Update #${this.updateCount}: ${device.name} (${device.type}) state=${JSON.stringify(state)}`,
+            );
+        }
+
         const accessory = Accessories.get(this.homebridge, device);
 
         if (accessory == null || accessory.onUpdate == null) {
+            if (this.updateCount <= 10) {
+                this.log.warn(`[LEAP] Update for unbound device ${device.name} (${device.type})`);
+            }
+
             return;
         }
 

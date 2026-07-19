@@ -26,7 +26,9 @@ export class Dimmer extends Common<Leap.Dimmer> implements Device {
             this.accessory.getService(this.homebridge.hap.Service.Lightbulb) ||
             this.accessory.addService(this.homebridge.hap.Service.Lightbulb, this.device.name);
 
-        this.service.addCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName);
+        if (!this.service.testCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName)) {
+            this.service.addCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName);
+        }
 
         this.service.setCharacteristic(this.homebridge.hap.Characteristic.Name, this.device.name);
         this.service.setCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName, this.device.name);

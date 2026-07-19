@@ -11,6 +11,11 @@ const log = logger.get("Build");
 
 logger.setDefaults({ useDefaults: true });
 
+const leapClientRoot = path.resolve(__dirname, "node_modules/@mkellsy/leap-client");
+const leapClientSrc = path.resolve(leapClientRoot, "src/index.ts");
+// Prefer TypeScript source when developing against a file: linked leap-client clone.
+const leapClientEntry = fs.existsSync(leapClientSrc) ? leapClientSrc : undefined;
+
 const options = {
     bundle: true,
     minify: true,
@@ -20,14 +25,29 @@ const options = {
     external: ["homebridge", "bson"],
     logLevel: "error",
     legalComments: "none",
+    ...(leapClientEntry
+        ? {
+              alias: {
+                  "@mkellsy/leap-client": leapClientEntry,
+              },
+          }
+        : {}),
 };
 
-log.info(`authority ${colors.cyan(path.resolve(__dirname, "authority"))}`);
+const authoritySource = path.resolve(leapClientRoot, "authority");
+const authorityDest = path.resolve(__dirname, "authority");
 
-fs.copyFileSync(
-    path.resolve(__dirname, "node_modules/@mkellsy/leap-client/authority"),
-    path.resolve(__dirname, "authority"),
-);
+log.info(`authority ${colors.cyan(authorityDest)}`);
+if (leapClientEntry) {
+    log.info(`leap-client source ${colors.cyan(leapClientEntry)}`);
+}
+
+if (!fs.existsSync(authoritySource)) {
+    log.error(`missing authority at ${authoritySource}`);
+    process.exit(1);
+}
+
+fs.copyFileSync(authoritySource, authorityDest);
 
 const tasks = [
     { input: path.resolve(__dirname, "src/index.ts"), output: path.resolve(__dirname, "lib/index.js") },
