@@ -22,7 +22,9 @@ export class Timeclock extends Common<Leap.Timeclock> implements Device {
     constructor(homebridge: API, device: Leap.Timeclock, log: Logging) {
         super(homebridge, device, log);
 
-        const name = `${this.device.name} (Timeclock)`;
+        const name = this.displayName.includes("(Timeclock)")
+            ? this.displayName
+            : `${this.displayName} (Timeclock)`;
 
         this.service =
             this.accessory.getService(this.homebridge.hap.Service.Switch) ||
@@ -33,7 +35,7 @@ export class Timeclock extends Common<Leap.Timeclock> implements Device {
         }
 
         this.service.setCharacteristic(this.homebridge.hap.Characteristic.Name, name);
-        this.service.setCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName, this.device.name);
+        this.service.setCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName, name);
 
         this.service.getCharacteristic(this.homebridge.hap.Characteristic.On).onGet(this.onGetState);
     }

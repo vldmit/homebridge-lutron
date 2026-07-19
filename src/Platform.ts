@@ -6,6 +6,7 @@ import { API, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig 
 
 import { Accessories } from "./Accessories";
 import { Device } from "./Device";
+import { deviceAreaPath, deviceDisplayName } from "./Names";
 
 import { defaults } from "./Config";
 
@@ -117,7 +118,16 @@ export class Platform implements DynamicPlatformPlugin {
 
                 accessory.register();
                 registered += 1;
-                this.log.info(`[LEAP] device available type=${device.type} name=${device.name} id=${device.id}`);
+
+                const displayName = deviceDisplayName(device);
+                const path = deviceAreaPath(device);
+                const room = device.room || device.area?.Name || "";
+                const areaHref = device.area?.href || "";
+
+                this.log.info(
+                    `[LEAP] device available type=${device.type} displayName=${displayName} ` +
+                        `rawName=${device.name} room=${room} path=${path} area=${areaHref} id=${device.id}`,
+                );
             } catch (error) {
                 failed += 1;
                 this.log.error(

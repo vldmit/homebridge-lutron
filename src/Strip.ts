@@ -30,8 +30,8 @@ export class Strip extends Common<Leap.Strip> implements Device {
             this.service.addCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName);
         }
 
-        this.service.setCharacteristic(this.homebridge.hap.Characteristic.Name, this.device.name);
-        this.service.setCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName, this.device.name);
+        this.service.setCharacteristic(this.homebridge.hap.Characteristic.Name, this.displayName);
+        this.service.setCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName, this.displayName);
 
         this.service
             .getCharacteristic(this.homebridge.hap.Characteristic.On)
