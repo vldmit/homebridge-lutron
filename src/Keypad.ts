@@ -32,6 +32,10 @@ export class Keypad extends Common<Leap.Keypad> implements Device {
             this.homebridge.hap.Characteristic.ServiceLabelNamespace.ARABIC_NUMERALS,
         );
 
+        this.log.info(
+            `Keypad/Remote setup: ${device.name} type=${device.type} buttons=${device.buttons?.length ?? 0}`,
+        );
+
         for (const button of device.buttons) {
             const service =
                 this.accessory.getServiceById(this.homebridge.hap.Service.StatelessProgrammableSwitch, button.name) ||
@@ -50,14 +54,31 @@ export class Keypad extends Common<Leap.Keypad> implements Device {
             service.setCharacteristic(this.homebridge.hap.Characteristic.ConfiguredName, button.name);
             service.setCharacteristic(this.homebridge.hap.Characteristic.ServiceLabelIndex, button.index);
 
+            // Remotes support single/double/long; keypads only single press.
+            // minValue must stay 0 (SINGLE_PRESS); only cap maxValue.
             service.getCharacteristic(this.homebridge.hap.Characteristic.ProgrammableSwitchEvent).setProps({
+                minValue: this.homebridge.hap.Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
                 maxValue:
                     device.type === DeviceType.Keypad
                         ? this.homebridge.hap.Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS
                         : this.homebridge.hap.Characteristic.ProgrammableSwitchEvent.LONG_PRESS,
+                validValues:
+                    device.type === DeviceType.Keypad
+                        ? [this.homebridge.hap.Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS]
+                        : [
+                              this.homebridge.hap.Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS,
+                              this.homebridge.hap.Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS,
+                              this.homebridge.hap.Characteristic.ProgrammableSwitchEvent.LONG_PRESS,
+                          ],
             });
 
             this.services.set(button.id, service);
+        }
+
+        if ((device.buttons?.length ?? 0) === 0) {
+            this.log.warn(
+                `Keypad/Remote ${device.name} has 0 buttons — HomeKit will mark it Not Compatible until buttons load`,
+            );
         }
     }
 
@@ -74,19 +95,19 @@ export class Keypad extends Common<Leap.Keypad> implements Device {
         if (service != null && characteristic != null) {
             switch (action) {
                 case "Press":
-                    this.log.debug(`Keypad: ${this.device.name} ${button.name} Pressed`);
+                    this.log.info(`Keypad: ${this.device.name} ${button.name} Pressed`);
 
                     characteristic.updateValue(this.homebridge.hap.Characteristic.ProgrammableSwitchEvent.SINGLE_PRESS);
                     break;
 
                 case "DoublePress":
-                    this.log.debug(`Keypad: ${this.device.name} ${button.name} Double Pressed`);
+                    this.log.info(`Keypad: ${this.device.name} ${button.name} Double Pressed`);
 
                     characteristic.updateValue(this.homebridge.hap.Characteristic.ProgrammableSwitchEvent.DOUBLE_PRESS);
                     break;
 
                 case "LongPress":
-                    this.log.debug(`Keypad: ${this.device.name} ${button.name} Long Pressed`);
+                    this.log.info(`Keypad: ${this.device.name} ${button.name} Long Pressed`);
 
                     characteristic.updateValue(this.homebridge.hap.Characteristic.ProgrammableSwitchEvent.LONG_PRESS);
                     break;

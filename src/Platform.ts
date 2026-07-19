@@ -148,15 +148,17 @@ export class Platform implements DynamicPlatformPlugin {
     private onAction = (device: HAP.Device, button: HAP.Button, action: HAP.Action): void => {
         this.actionCount += 1;
 
-        if (this.actionCount <= 20 || this.actionCount % 50 === 0) {
-            this.log.info(
-                `[LEAP] Action #${this.actionCount}: ${device.name} button=${button.name} action=${action}`,
-            );
-        }
+        // Always log button actions — these are sparse and critical for Pico/keypad debugging.
+        this.log.info(
+            `[LEAP] Action #${this.actionCount}: ${device.name} button=${button.name} action=${action}`,
+        );
 
         const accessory = Accessories.get(this.homebridge, device);
 
         if (accessory == null || accessory.onAction == null) {
+            this.log.warn(
+                `[LEAP] Action for unbound device ${device.name} button=${button.name} (accessory missing or no onAction)`,
+            );
             return;
         }
 
