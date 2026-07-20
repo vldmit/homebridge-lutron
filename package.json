@@ -1,5 +1,5 @@
 {
-    "version": "1.7.21",
+    "version": "1.7.22",
     "name": "@mkellsy/homebridge-lutron",
     "displayName": "Homebridge Lutron",
     "description": "This is a plugin that exposes Lutron LEAP devices to Homebridge.",
@@ -79,7 +79,7 @@
         "@types/sinon": "^10.0.20",
         "@types/sinon-chai": "^3.2.11",
         "@typescript-eslint/eslint-plugin": "^7.11.0",
-        "@vldmit/leap-client": "^1.7.9",
+        "@vldmit/leap-client": "^1.7.10",
         "chai": "^4.3.10",
         "chai-subset": "^1.6.0",
         "colors": "^1.4.0",

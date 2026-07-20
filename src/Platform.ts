@@ -1,12 +1,14 @@
 import * as HAP from "@mkellsy/hap-device";
 import * as Leap from "@vldmit/leap-client";
-import * as JsLogger from "js-logger";
+import JsLogger from "js-logger";
 
 import { API, DynamicPlatformPlugin, Logging, PlatformAccessory, PlatformConfig } from "homebridge";
 
 import { Accessories } from "./Accessories";
 import { Device } from "./Device";
 import { deviceAreaPath, deviceDisplayName } from "./Names";
+import { JukeaudioHooks } from "./JukeaudioHooks";
+import { resolveJukeaudioConfig } from "./JukeaudioConfig";
 
 import { defaults } from "./Config";
 
@@ -26,6 +28,7 @@ export class Platform implements DynamicPlatformPlugin {
     private readonly log: Logging;
     private readonly config: PlatformConfig;
     private readonly homebridge: API;
+    private readonly jukeHooks: JukeaudioHooks | null;
     private updateCount = 0;
     private actionCount = 0;
 
@@ -40,6 +43,9 @@ export class Platform implements DynamicPlatformPlugin {
         this.log = log;
         this.config = { ...defaults, ...config };
         this.homebridge = homebridge;
+
+        const jukeCfg = resolveJukeaudioConfig(this.config.jukeaudio);
+        this.jukeHooks = jukeCfg != null ? new JukeaudioHooks(jukeCfg, this.log) : null;
 
         // leap-client uses js-logger; useDefaults installs a console handler (setDefaults alone is silent).
         JsLogger.useDefaults({
@@ -152,6 +158,9 @@ export class Platform implements DynamicPlatformPlugin {
         this.log.info(
             `[LEAP] Action #${this.actionCount}: ${device.name} button=${button.name} action=${action}`,
         );
+
+        // Optional jukeaudio-control volume hooks (raw Press/Release for raise/lower).
+        this.jukeHooks?.handle(device, button, action);
 
         const accessory = Accessories.get(this.homebridge, device);
 
